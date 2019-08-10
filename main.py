@@ -23,7 +23,7 @@ from dash.dependencies import Input, Output
 
 import mortgagetvm as mort
 
-external_stylesheets = ['https//codepen.io.chriddyp/pen/bWLwgP.css']
+#external_stylesheets = ['https//codepen.io.chriddyp/pen/bWLwgP.css']
 
 server = Flask(__name__)
 
@@ -35,22 +35,19 @@ y = m.netWorth.data
 dashApp = dash.Dash(
     __name__,
     server=server,
-    external_stylesheets=external_stylesheets,
-    #routes_pathname_prefix='/dash/'
+    #external_stylesheets=external_stylesheets,
+    routes_pathname_prefix='/dash/'
 )
 dashApp.scripts.config.serve_locally = True
-dashApp.css.append_css({"external_url": "https://codepen.io/chriddyp/pen/bWLwgP.css"})
+#dashApp.css.append_css({"external_url": "https://codepen.io/chriddyp/pen/bWLwgP.css"})
 
 
 dashApp.layout = html.Div(children=[
-    html.H1(children='Hello Dash!!',
+    html.H1(children='Time-value Loan & Investment Analyzer',
 	    style={
                 'textAlign' : 'center',
 		}
 ),
-    html.Div(children='''
-        Dash: A
-    '''),
     dcc.Graph(
         id = 'main-plot',
     ),
