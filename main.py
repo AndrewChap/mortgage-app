@@ -19,11 +19,9 @@ from flask import Flask
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, State
 
 import mortgagetvm as mort
-
-#external_stylesheets = ['https//codepen.io.chriddyp/pen/bWLwgP.css']
 
 server = Flask(__name__)
 
@@ -35,11 +33,9 @@ y = m.netWorth.data
 dashApp = dash.Dash(
     __name__,
     server=server,
-    #external_stylesheets=external_stylesheets,
     routes_pathname_prefix='/dash/'
 )
 dashApp.scripts.config.serve_locally = True
-#dashApp.css.append_css({"external_url": "https://codepen.io/chriddyp/pen/bWLwgP.css"})
 
 
 dashApp.layout = html.Div(children=[
@@ -52,27 +48,36 @@ dashApp.layout = html.Div(children=[
         id = 'main-plot',
     ),
     html.Label('Text Input'),
-    dcc.Input(id='mir-input', value='3.5', type='text'),
+    dcc.Input(id='mir-state', value='3.5', type='text'),
+    html.Button(id='mir-button', n_clicks = 0, children='Calculate!'),
     html.Div(id='mir-div')
 ])
 
 @dashApp.callback(
-    Output(component_id='mir-div', component_property='children'),
-    [Input(component_id='mir-input', component_property='value')]
+    Output('mir-div', 'children'),
+    [Input('mir-button', 'n_clicks')],
+    [State('mir-state', 'value')],
 )
-def update_output_div(input_value):
+def update_output_div(button, input_value):
     input_float = float(input_value)
     return 'Rate = {:.2f}%, x[0] = {}'.format(input_float,y[0])
 
 @dashApp.callback(
     Output('main-plot', 'figure'),
-    [Input('mir-input', 'value')])
-def update_figure(input_value):
+    [Input('mir-button', 'n_clicks')],
+    [State('mir-state', 'value')],
+)
+def update_figure(button, input_value):
     input_float = float(input_value)
+    m = mort.Mortgage(mortgageRate=input_value)
+    print('rate is now {}'.format(m.mortgageRate.data[-1]))
+    m.simulateMortgage()
+    print('final worth is {}'.format(m.netWorth.data[-1]))
+    y = m.netWorth.data
     return {
         'data': [
-            {'x': x, 'y': y+input_float,
-             'type': 'line', 'name': 'SF'},
+            {'x': x, 'y': y,
+             'type': 'line', 'name': m.name},
         ],
         'layout': {
             'title': 'Dash Data Visualization'
