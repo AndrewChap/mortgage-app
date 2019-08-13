@@ -25,10 +25,11 @@ import mortgagetvm as mort
 
 server = Flask(__name__)
 
-m = mort.Mortgage()
-m.simulateMortgage()
-x = m.timeVector.data
-y = m.netWorth.data
+num_mortgages = 2
+mortgages = [mort.Mortgage() for _ in range(num_mortgages)]
+for mortgage in mortgages:
+   mortgage.simulateMortgage()
+
 
 dashApp = dash.Dash(
     __name__,
@@ -60,7 +61,7 @@ dashApp.layout = html.Div(children=[
 )
 def update_output_div(button, input_value):
     input_float = float(input_value)
-    return 'Rate = {:.2f}%, x[0] = {}'.format(input_float,y[0])
+    return 'Rate = {:.2f}%, x[0] = {}'.format(input_float,mortgages[0].netWorth.data[-1])
 
 @dashApp.callback(
     Output('main-plot', 'figure'),
@@ -69,16 +70,12 @@ def update_output_div(button, input_value):
 )
 def update_figure(button, input_value):
     input_float = float(input_value)
-    m = mort.Mortgage(mortgageRate=input_value)
-    print('rate is now {}'.format(m.mortgageRate.data[-1]))
-    m.simulateMortgage()
-    print('final worth is {}'.format(m.netWorth.data[-1]))
-    y = m.netWorth.data
+    for i in range(num_mortgages):
+        mortgages[i] = mort.Mortgage(mortgageRate=input_value)
+        mortgages[i].simulateMortgage()
+    data = [{'x': mortgage.timeVector.data, 'y': mortgage.netWorth.data} for mortgage in mortgages]
     return {
-        'data': [
-            {'x': x, 'y': y,
-             'type': 'line', 'name': m.name},
-        ],
+        'data': data,
         'layout': {
             'title': 'Dash Data Visualization'
         }
