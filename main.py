@@ -41,17 +41,17 @@ dashApp.scripts.config.serve_locally = True
 
 dashApp.layout = html.Div(children=[
     html.H1(children='Time-value Loan & Investment Analyzer',
-	    style={
-                'textAlign' : 'center',
-		}
-),
-    dcc.Graph(
-        id = 'main-plot',
+        style={
+            'textAlign' : 'center',
+        }
     ),
     html.Label('Text Input'),
     dcc.Input(id='mir-state', value='3.5', type='text'),
     html.Button(id='mir-button', n_clicks = 0, children='Calculate!'),
-    html.Div(id='mir-div')
+    html.Div(id='mir-div'),
+    dcc.Graph(
+        id = 'main-plot',
+    ),
 ])
 
 @dashApp.callback(
