@@ -1,28 +1,10 @@
-####################################################################### Copyright 2015 Google Inc. All Rights Reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-# [START gae_flex_quickstart]
 import logging
-
 from flask import Flask
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output, State
-
 import mortgagetvm as mort
-
 server = Flask(__name__)
 
 num_mortgages = 2
@@ -30,14 +12,17 @@ mortgages = [mort.Mortgage() for _ in range(num_mortgages)]
 for mortgage in mortgages:
    mortgage.simulateMortgage()
 
-
 dashApp = dash.Dash(
     __name__,
     server=server,
     routes_pathname_prefix='/dash/'
 )
 dashApp.scripts.config.serve_locally = True
-
+mortHtmls = []
+for i in range(num_mortgages):
+    mortHtmls += [html.Label('Mortgage {}'.format(i)),
+                  dcc.Input(id='mir-state{}'.format(i), value='3.5', type='text'),
+                  html.Div(id='mir-div{}'.format(i), class='field-div')]
 
 dashApp.layout = html.Div(children=[
     html.H1(children='Time-value Loan & Investment Analyzer',
@@ -45,33 +30,31 @@ dashApp.layout = html.Div(children=[
             'textAlign' : 'center',
         }
     ),
-    html.Label('Text Input'),
-    dcc.Input(id='mir-state', value='3.5', type='text'),
+    *mortHtmls,
     html.Button(id='mir-button', n_clicks = 0, children='Calculate!'),
-    html.Div(id='mir-div'),
     dcc.Graph(
         id = 'main-plot',
     ),
 ])
 
 @dashApp.callback(
-    Output('mir-div', 'children'),
+    [Output('mir-div{}'.format(i), 'children') for i in range(num_mortgages)],
     [Input('mir-button', 'n_clicks')],
-    [State('mir-state', 'value')],
+    [State('mir-state{}'.format(i), 'value') for i in range(num_mortgages)],
 )
-def update_output_div(button, input_value):
-    input_float = float(input_value)
-    return 'Rate = {:.2f}%, x[0] = {}'.format(input_float,mortgages[0].netWorth.data[-1])
+def update_output_div(button, *input_values):
+    input_floats = [float(input_value) for input_value in input_values]
+    return ['Rate = {:.2f}%, x = {}'.format(input_float,mortgage.netWorth.data[-1]) for input_float,mortgage in zip(input_floats,mortgages)]
 
 @dashApp.callback(
     Output('main-plot', 'figure'),
     [Input('mir-button', 'n_clicks')],
-    [State('mir-state', 'value')],
+    [State('mir-state{}'.format(i), 'value') for i in range(num_mortgages)],
 )
-def update_figure(button, input_value):
-    input_float = float(input_value)
+def update_figure(button, *input_values):
+    input_floats = [float(input_value) for input_value in input_values]
     for i in range(num_mortgages):
-        mortgages[i] = mort.Mortgage(mortgageRate=input_value)
+        mortgages[i] = mort.Mortgage(mortgageRate=input_values[i])
         mortgages[i].simulateMortgage()
     data = [{'x': mortgage.timeVector.data, 'y': mortgage.netWorth.data} for mortgage in mortgages]
     return {
