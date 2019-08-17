@@ -22,7 +22,7 @@ mortHtmls = []
 for i in range(num_mortgages):
     mortHtmls += [html.Label('Mortgage {}'.format(i)),
                   dcc.Input(id='mir-state{}'.format(i), value='3.5', type='text'),
-                  html.Div(id='mir-div{}'.format(i), class='field-div')]
+                  html.Div(id='mir-div{}'.format(i), className='field-div')]
 
 dashApp.layout = html.Div(children=[
     html.H1(children='Time-value Loan & Investment Analyzer',
