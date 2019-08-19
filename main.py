@@ -41,6 +41,11 @@ for i in range(num_mortgages):
                 dcc.Input(id='mdp-state{}'.format(i), value='0.2', type='text'),
                 html.Div(id='mdp-div{}'.format(i), className='field-div')
             ]),
+            html.Div([
+                html.Label('Origination fees'.format(i)),
+                dcc.Input(id='mof-state{}'.format(i), value='0.5', type='text'),
+                html.Div(id='mof-div{}'.format(i), className='field-div')
+            ]),
         ])
     )
 dashApp.layout = html.Div(children=[
@@ -70,14 +75,15 @@ dashApp.layout = html.Div(children=[
     Output('main-plot', 'figure'),
     [Input('mir-button', 'n_clicks')],
     [State('mir-state{}'.format(i), 'value') for i in range(num_mortgages)] + 
-    [State('mdp-state{}'.format(i), 'value') for i in range(num_mortgages)], 
+    [State('mdp-state{}'.format(i), 'value') for i in range(num_mortgages)] + 
+    [State('mof-state{}'.format(i), 'value') for i in range(num_mortgages)], 
 )
 def update_figure(button, *input_values):
     input_floats = [float(input_value) for input_value in input_values]
     for i in range(num_mortgages):
-        j = 2*i
-        mortgages[i] = mort.Mortgage(mortgageRate=input_values[i])
-        mortgages[i] = mort.Mortgage(downPayment=input_values[i+num_mortgages])
+        mortgages[i] = mort.Mortgage(mortgageRate=input_values[i],
+                                     downPayment=input_values[i+num_mortgages],
+                                     originationFees=input_values[i+2*num_mortgages])
         mortgages[i].simulateMortgage()
     data = [{'x': mortgage.timeVector.data, 'y': mortgage.totalAmountSpent.data} for mortgage in mortgages]
     return {
