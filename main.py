@@ -35,7 +35,7 @@ for i in range(num_mortgages):
                 html.Label('Mortgage Rate'.format(i)),
                 dcc.Input(id='mir-state{}'.format(i), value='3.5', type='text'),
                 html.Div(id='mir-div{}'.format(i), className='field-div')
-            ]),
+                ], className='container'),
             html.Div([
                 html.Label('Down Payment'.format(i)),
                 dcc.Input(id='mdp-state{}'.format(i), value='0.2', type='text'),
