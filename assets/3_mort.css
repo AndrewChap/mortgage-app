@@ -1,0 +1,10 @@
+.input-wrapper {
+  display: flex;
+  flex-wrap: wrap;
+} 
+.pinput{
+  width: 250px;
+  margin-right: auto;
+  margin-left: auto;
+  text-align: center;
+}
