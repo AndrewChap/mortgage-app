@@ -20,6 +20,42 @@ dashApp = dash.Dash(
     routes_pathname_prefix='/dash/'
 )
 dashApp.scripts.config.serve_locally = True
+mGroups = []
+
+def camel_case(st):
+    output = ''.join(x for x in st.title() if x.isalnum())
+    return output[0].lower() + output[1:]
+fields = ['Mortgage rate', 'Down payment', 'Origination fees']
+fieldsC = [camel_case(field) for field in fields]
+
+mInput = [
+    html.H5('Fields'),
+]
+for field in fields:
+    mInput += [
+        html.Label(field),
+    ]
+mGroups.append(
+    html.P(mInput, className='pinput')
+)
+for i, mortgage in enumerate(mortgages):
+    mInput = [
+        html.H5('Mortgage {}'.format(i)),
+    ]
+    for j, (field, fieldC) in enumerate(zip(fields,fieldsC)):
+        mInput += [
+    #        html.Label(field),
+            dcc.Input(
+                id='{}{}'.format(fieldC,i),
+                value=str(getattr(mortgage,fieldC).value),
+                type='text',
+            )
+        ]
+    mGroups.append(
+        html.P(mInput, className='pinput')
+    )
+mGroups = html.Div(mGroups,className='input-wrapper'),
+
 globalHtmls = []
 globalHtmls.append(
     html.Div([
@@ -30,23 +66,35 @@ mortHtmls = []
 for i in range(num_mortgages):
     mortHtmls.append(
         html.Div([
-            html.Label('Mortgage {}'.format(i)),
-            html.Div([
+            html.P([
+                html.Label('Mortgage {}'.format(i)),
                 html.Label('Mortgage Rate'.format(i)),
                 dcc.Input(id='mir-state{}'.format(i), value='3.5', type='text'),
-                html.Div(id='mir-div{}'.format(i), className='field-div')
-                ], className='container'),
-            html.Div([
+                html.Div(id='mir-div{}'.format(i), className='field-div'),
                 html.Label('Down Payment'.format(i)),
                 dcc.Input(id='mdp-state{}'.format(i), value='0.2', type='text'),
-                html.Div(id='mdp-div{}'.format(i), className='field-div')
-            ]),
-            html.Div([
+                html.Div(id='mdp-div{}'.format(i), className='field-div'),
                 html.Label('Origination fees'.format(i)),
                 dcc.Input(id='mof-state{}'.format(i), value='0.5', type='text'),
-                html.Div(id='mof-div{}'.format(i), className='field-div')
-            ]),
-        ])
+                html.Div(id='mof-div{}'.format(i), className='field-div'),
+                #html.Div([
+                #    html.Label('Mortgage Rate'.format(i)),
+                #    dcc.Input(id='mir-state{}'.format(i), value='3.5', type='text'),
+                #    html.Div(id='mir-div{}'.format(i), className='field-div')
+                #], className='container'),
+                #html.Div([
+                #    html.Label('Down Payment'.format(i)),
+                #    dcc.Input(id='mdp-state{}'.format(i), value='0.2', type='text'),
+                #    html.Div(id='mdp-div{}'.format(i), className='field-div')
+                #], className='container'),
+                #html.Div([
+                #    #html.Label('Origination fees'.format(i)),
+                #    dcc.Input(id='mof-state{}'.format(i), value='0.5', type='text'),
+                #    #html.Div(id='mof-div{}'.format(i), className='field-div')
+                #], className='container'),
+            ], style={'width': '150px', 'margin-right': 'auto',
+           'margin-left': 'auto', 'text-align': 'center'}),
+        ],style={'display': 'flex', 'flex-wrap': 'wrap'})#className='columns')
     )
 dashApp.layout = html.Div(children=[
     html.H1(children='Time-value Loan & Investment Analyzer',
@@ -54,14 +102,14 @@ dashApp.layout = html.Div(children=[
             'textAlign' : 'center',
         }
     ),
-    *globalHtmls,
-    *mortHtmls,
+    *mGroups,
+    #*globalHtmls,
+    #*mortHtmls,
     html.Button(id='mir-button', n_clicks = 0, children='Calculate!'),
     dcc.Graph(
         id = 'main-plot',
     ),
 ])
-
 #@dashApp.callback(
 #    [Output('mir-div{}'.format(i), 'children') for i in range(num_mortgages)],
 #    [Input('mir-button', 'n_clicks')],
@@ -70,13 +118,12 @@ dashApp.layout = html.Div(children=[
 #def update_output_div(button, *input_values):
 #    input_floats = [float(input_value) for input_value in input_values]
 #    return ['Rate = {:.2f}%, x = {}'.format(input_float,mortgage.netWorth.data[-1]) for input_float,mortgage in zip(input_floats,mortgages)]
-
 @dashApp.callback(
     Output('main-plot', 'figure'),
     [Input('mir-button', 'n_clicks')],
-    [State('mir-state{}'.format(i), 'value') for i in range(num_mortgages)] + 
-    [State('mdp-state{}'.format(i), 'value') for i in range(num_mortgages)] + 
-    [State('mof-state{}'.format(i), 'value') for i in range(num_mortgages)], 
+    [State('mortgageRate{}'.format(i), 'value') for i in range(num_mortgages)] + 
+    [State('downPayment{}'.format(i), 'value') for i in range(num_mortgages)] + 
+    [State('originationFees{}'.format(i), 'value') for i in range(num_mortgages)], 
 )
 def update_figure(button, *input_values):
     input_floats = [float(input_value) for input_value in input_values]
