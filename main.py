@@ -43,19 +43,35 @@ def camel_case(st):
 fields = ['Mortgage rate', 'Down payment', 'Origination fees']
 fieldsC = [camel_case(field) for field in fields]
 
-mInput = [
+globs = ['TVM rate', 'House cost']
+globsC = [camel_case(glob) for glob in globs]
+
+# Create column for global options
+mGlob = [
+    html.H5('Common options')
+]
+for j, (glob, globC) in enumerate(zip(globs,globsC)):
+    mGlob += [
+        html.Label(glob),    
+        dcc.Input(
+            id='{}'.format(globC),
+            value=str(getattr(mortgageComparison.mortgages[0],globC).value),
+            type='text',
+        )
+    ]
+# Create column for labels for mortgage-specific options:
+mLabels = [
     html.H5('Fields'),
 ]
 for field in fields:
-    mInput += [
+    mLabels += [
         html.Label(field),
     ]
 mGroups.append(
-    html.P(mInput, className='pinput')
+    html.P(mLabels, className='pinput')
 )
 for i, mortgage in enumerate(mortgageComparison.mortgages):
     mInput = [
-        #html.H5('Mortgage {}'.format(i)),
         html.H5(mortgage.name)
     ]
     for j, (field, fieldC) in enumerate(zip(fields,fieldsC)):
@@ -70,6 +86,9 @@ for i, mortgage in enumerate(mortgageComparison.mortgages):
     mGroups.append(
         html.P(mInput, className='pinput')
     )
+mGroups.append(
+    html.P(mGlob, className='pinput')
+)
 mGroups = html.Div(mGroups,className='input-wrapper'),
 
 globalHtmls = []
@@ -91,14 +110,6 @@ dashApp.layout = html.Div(children=[
         id = 'main-plot',
     ),
 ])
-#@dashApp.callback(
-#    [Output('mir-div{}'.format(i), 'children') for i in range(num_mortgages)],
-#    [Input('mir-button', 'n_clicks')],
-#    [State('mir-state{}'.format(i), 'value') for i in range(num_mortgages)],
-#)
-#def update_output_div(button, *input_values):
-#    input_floats = [float(input_value) for input_value in input_values]
-#    return ['Rate = {:.2f}%, x = {}'.format(input_float,mortgage.netWorth.data[-1]) for input_float,mortgage in zip(input_floats,mortgages)]
 @dashApp.callback(
     Output('main-plot', 'figure'),
     [Input('mir-button', 'n_clicks')],
