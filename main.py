@@ -78,40 +78,6 @@ globalHtmls.append(
         html.Label('Home Cost')
     ])
 )
-mortHtmls = []
-for i in range(num_mortgages):
-    mortHtmls.append(
-        html.Div([
-            html.P([
-                html.Label('Mortgage {}'.format(i)),
-                html.Label('Mortgage Rate'.format(i)),
-                dcc.Input(id='mir-state{}'.format(i), value='3.5', type='text'),
-                html.Div(id='mir-div{}'.format(i), className='field-div'),
-                html.Label('Down Payment'.format(i)),
-                dcc.Input(id='mdp-state{}'.format(i), value='0.2', type='text'),
-                html.Div(id='mdp-div{}'.format(i), className='field-div'),
-                html.Label('Origination fees'.format(i)),
-                dcc.Input(id='mof-state{}'.format(i), value='0.5', type='text'),
-                html.Div(id='mof-div{}'.format(i), className='field-div'),
-                #html.Div([
-                #    html.Label('Mortgage Rate'.format(i)),
-                #    dcc.Input(id='mir-state{}'.format(i), value='3.5', type='text'),
-                #    html.Div(id='mir-div{}'.format(i), className='field-div')
-                #], className='container'),
-                #html.Div([
-                #    html.Label('Down Payment'.format(i)),
-                #    dcc.Input(id='mdp-state{}'.format(i), value='0.2', type='text'),
-                #    html.Div(id='mdp-div{}'.format(i), className='field-div')
-                #], className='container'),
-                #html.Div([
-                #    #html.Label('Origination fees'.format(i)),
-                #    dcc.Input(id='mof-state{}'.format(i), value='0.5', type='text'),
-                #    #html.Div(id='mof-div{}'.format(i), className='field-div')
-                #], className='container'),
-            ], style={'width': '150px', 'margin-right': 'auto',
-           'margin-left': 'auto', 'text-align': 'center'}),
-        ],style={'display': 'flex', 'flex-wrap': 'wrap'})#className='columns')
-    )
 dashApp.layout = html.Div(children=[
     html.H1(children='Time-value Loan & Investment Analyzer',
         style={
@@ -120,7 +86,6 @@ dashApp.layout = html.Div(children=[
     ),
     *mGroups,
     #*globalHtmls,
-    #*mortHtmls,
     html.Button(id='mir-button', n_clicks = 0, children='Calculate!'),
     dcc.Graph(
         id = 'main-plot',
