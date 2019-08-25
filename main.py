@@ -45,6 +45,7 @@ fieldsC = [camel_case(field) for field in fields]
 
 globs = ['TVM rate', 'House cost']
 globsC = [camel_case(glob) for glob in globs]
+numGlobs = len(globs)
 
 # Create column for global options
 mGlob = [
@@ -59,6 +60,10 @@ for j, (glob, globC) in enumerate(zip(globs,globsC)):
             type='text',
         )
     ]
+mGroups.append(
+    html.P(mGlob, className='pinput')
+)
+
 # Create column for labels for mortgage-specific options:
 mLabels = [
     html.H5('Fields'),
@@ -86,9 +91,6 @@ for i, mortgage in enumerate(mortgageComparison.mortgages):
     mGroups.append(
         html.P(mInput, className='pinput')
     )
-mGroups.append(
-    html.P(mGlob, className='pinput')
-)
 mGroups = html.Div(mGroups,className='input-wrapper'),
 
 globalHtmls = []
@@ -113,16 +115,24 @@ dashApp.layout = html.Div(children=[
 @dashApp.callback(
     Output('main-plot', 'figure'),
     [Input('mir-button', 'n_clicks')],
+    [State('tvmRate', 'value'), State('houseCost','value')] + 
     [State('mortgageRate{}'.format(i), 'value') for i in range(num_mortgages)] + 
     [State('downPayment{}'.format(i), 'value') for i in range(num_mortgages)] + 
     [State('originationFees{}'.format(i), 'value') for i in range(num_mortgages)], 
 )
 def update_figure(button, *input_values):
     input_floats = [float(input_value) for input_value in input_values]
+    globOptions = dict()
+    for j,globC in enumerate(globsC):
+        globOptions[globC] = input_values[j]
+    mortgageComparison.update_mortgages(options=globOptions)
+
+
     for i,mortgage in enumerate(mortgageComparison.mortgages):
         options = dict()
         for j,fieldC in enumerate(fieldsC):
-            options[fieldC] = input_values[i+j*num_mortgages]
+            index = numGlobs + i + j*num_mortgages
+            options[fieldC] = input_values[index]
         mortgage.update_mortgage(options=options)    
         mortgage.simulateMortgage()
     data = [{'x': mortgage.timeVector.data, 'y': mortgage.totalAmountSpent.data} for mortgage in mortgageComparison.mortgages]
