@@ -9,7 +9,21 @@ import pdb
 db = pdb.set_trace
 server = Flask(__name__)
 
+mortgageComparison = mort.MortgageComparison()
+mortgageComparison.setDefaults(tvmRate       = '6.0%',
+                               mortgageRate  = '4.5%',
+                               downPayment   = '0.2',
+                               inflationRate = '0.0%',
+                               rentalRate    = '0.0%',
+                               houseCost     = '$1',)
+
 num_mortgages = 2
+for i in range(num_mortgages):
+    mortgageComparison.addMortgage(
+        name = 'Mortgage {}'.format(i+1)
+    )
+
+mortgageComparison.simulateMortgages()    
 mortgages = [mort.Mortgage() for _ in range(num_mortgages)]
 for mortgage in mortgages:
    mortgage.simulateMortgage()
@@ -25,6 +39,7 @@ mGroups = []
 def camel_case(st):
     output = ''.join(x for x in st.title() if x.isalnum())
     return output[0].lower() + output[1:]
+
 fields = ['Mortgage rate', 'Down payment', 'Origination fees']
 fieldsC = [camel_case(field) for field in fields]
 
@@ -38,9 +53,10 @@ for field in fields:
 mGroups.append(
     html.P(mInput, className='pinput')
 )
-for i, mortgage in enumerate(mortgages):
+for i, mortgage in enumerate(mortgageComparison.mortgages):
     mInput = [
-        html.H5('Mortgage {}'.format(i)),
+        #html.H5('Mortgage {}'.format(i)),
+        html.H5(mortgage.name)
     ]
     for j, (field, fieldC) in enumerate(zip(fields,fieldsC)):
         mInput += [
@@ -127,12 +143,13 @@ dashApp.layout = html.Div(children=[
 )
 def update_figure(button, *input_values):
     input_floats = [float(input_value) for input_value in input_values]
-    for i in range(num_mortgages):
-        mortgages[i] = mort.Mortgage(mortgageRate=input_values[i],
-                                     downPayment=input_values[i+num_mortgages],
-                                     originationFees=input_values[i+2*num_mortgages])
-        mortgages[i].simulateMortgage()
-    data = [{'x': mortgage.timeVector.data, 'y': mortgage.totalAmountSpent.data} for mortgage in mortgages]
+    for i,mortgage in enumerate(mortgageComparison.mortgages):
+        options = dict()
+        for j,fieldC in enumerate(fieldsC):
+            options[fieldC] = input_values[i+j*num_mortgages]
+        mortgage.update_mortgage(options=options)    
+        mortgage.simulateMortgage()
+    data = [{'x': mortgage.timeVector.data, 'y': mortgage.totalAmountSpent.data} for mortgage in mortgageComparison.mortgages]
     return {
         'data': data,
         'layout': {
