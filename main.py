@@ -7,11 +7,12 @@ from dash.dependencies import Input, Output, State
 import mortgagetvm as mort
 import pdb
 db = pdb.set_trace
+import numpy as np
 server = Flask(__name__)
 
 mortgageComparison = mort.MortgageComparison()
-mortgageComparison.setDefaults(tvmRate       = '6.0%',
-                               mortgageRate  = '4.5%',
+mortgageComparison.setDefaults(tvmRate       = '0.0%',
+                               mortgageRate  = '4.0%',
                                downPayment   = '0.2',
                                inflationRate = '0.0%',
                                rentalRate    = '0.0%',
@@ -106,7 +107,6 @@ dashApp.layout = html.Div(children=[
         }
     ),
     *mGroups,
-    #*globalHtmls,
     html.Button(id='mir-button', n_clicks = 0, children='Calculate!'),
     dcc.Graph(
         id = 'main-plot',
@@ -135,10 +135,24 @@ def update_figure(button, *input_values):
             options[fieldC] = input_values[index]
         mortgage.update_mortgage(options=options)    
         mortgage.simulateMortgage()
-    data = [{'x': mortgage.timeVector.data, 'y': mortgage.totalAmountSpent.data} for mortgage in mortgageComparison.mortgages]
+    ymin = 0.0
+    ymax = 2.0
+    ymax = max([mortgage.houseCost.value for mortgage in mortgageComparison.mortgages] + [np.amax(mortgage.totalAmountSpent.data) for mortgage in mortgageComparison.mortgages])
+    data = [{
+        'x': mortgage.timeVector.data, 
+        'y': mortgage.totalAmountSpent.data,
+        'name': mortgage.name}
+        for mortgage in mortgageComparison.mortgages]
     return {
         'data': data,
         'layout': {
+            'xaxis': {
+                'title': 'Time (years)',
+            },
+            'yaxis': {
+                'title': 'Amount paid towards home',
+                'range': [ymin, ymax],
+            },
             #'title': 'Dash Data Visualization'
         }
     }
