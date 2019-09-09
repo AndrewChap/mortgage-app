@@ -11,86 +11,21 @@ db = pdb.set_trace
 import numpy as np
 server = Flask(__name__)
 
+# Helper to convert a 0-255 rgb vector to hex, should be moved to mortgagetvm module
 def rgb2hex(rgb):
     return "#{:02x}{:02x}{:02x}".format(rgb[0],rgb[1],rgb[2])
+# Helper to convert a space-separated string into a camelCase string, maybe should be moved to mortgagetvm module
+def camel_case(st):
+    output = ''.join(x for x in st.title() if x.isalnum())
+    return output[0].lower() + output[1:]
+# Helper to perform enumerate in reverse, so that the first mortgage can be plotted on top
 def reverse_enumerate(L):
    # Only works on things that have a len()
    l = len(L)
    for i, n in enumerate(L):
        yield l-i-1, n
 
-max_num_mortgages = 5 # unused
-num_mortgages = 3
-
-mortgageComparison = mort.MortgageComparison()
-mortgageComparison.setDefaults(tvmRate       = '0.0%',
-                               mortgageRate  = '4.0%',
-                               downPayment   = '0.2',
-                               inflationRate = '0.0%',
-                               rentalRate    = '0.0%',
-                               houseCost     = '$1',)
-
-for i in range(num_mortgages):
-    mortgageComparison.addMortgage(
-        name = 'Mortgage {}'.format(i+1)
-    )
-
-mortgageComparison.simulateMortgages()    
-
-mortgages = [mort.Mortgage() for _ in range(num_mortgages)]
-
-for mortgage in mortgages:
-   mortgage.simulateMortgage()
-
-dashApp = dash.Dash(
-    __name__,
-    server=server,
-    routes_pathname_prefix='/dash/',
-    #suppress_callback_exceptions=True,
-)
-dashApp.scripts.config.serve_locally = True
-mGroups = []
-
-def camel_case(st):
-    output = ''.join(x for x in st.title() if x.isalnum())
-    return output[0].lower() + output[1:]
-
-fields = ['Mortgage rate', 'Down payment', 'Origination fees']
-fieldsC = [camel_case(field) for field in fields]
-
-globs = ['TVM rate', 'House cost']
-globsC = [camel_case(glob) for glob in globs]
-numGlobs = len(globs)
-
-# Create column for global options
-mGlob = [
-    html.H5('Common options')
-]
-for j, (glob, globC) in enumerate(zip(globs,globsC)):
-    mGlob += [
-        html.Label(glob, className='field-label'),    
-        dcc.Input(
-            id='{}'.format(globC),
-            value=str(getattr(mortgageComparison.mortgages[0],globC).value),
-            type='text',
-            n_submit = 0,
-        )
-    ]
-mGroups.append(
-    html.P(mGlob, className='pinput pretty-container')
-)
-
-# Create column for labels for mortgage-specific options:
-#mLabels = [
-#    html.H5('Fields'),
-#]
-#for field in fields:
-#    mLabels += [
-#        html.Label(field),
-#    ]
-#mGroups.append(
-##    html.P(mLabels, className='pinput')
-#)
+# Create top bar
 calculateButton = html.Div(
     html.Button(
         id='calculate',
@@ -110,12 +45,70 @@ topNav = html.Div(
     className = 'top-nav',
 )
 
+#max_num_mortgages = 5 # unused
+num_mortgages = 3
 
-mRows = []
+# Create mortgages
+mortgageComparison = mort.MortgageComparison()
+# Set defaults
+mortgageComparison.setDefaults(tvmRate       = '0.0%',
+                               mortgageRate  = '4.0%',
+                               downPayment   = '0.2',
+                               inflationRate = '0.0%',
+                               rentalRate    = '0.0%',
+                               houseCost     = '$1',)
 
+# Create mortgages
+for i in range(num_mortgages):
+    mortgageComparison.addMortgage(
+        name = 'Mortgage {}'.format(i+1)
+    )
+
+mortgageComparison.simulateMortgages()    
+
+dashApp = dash.Dash(
+    __name__,
+    server=server,
+    routes_pathname_prefix='/dash/',
+    #suppress_callback_exceptions=True,
+)
+dashApp.scripts.config.serve_locally = True
+
+# Create list of divs for mortgage inputs (including global inputs)
+mGroups = []
+
+# Choose fields that user can modify
+fields = ['Mortgage rate', 'Down payment', 'Origination fees']
+fieldsC = [camel_case(field) for field in fields]
+
+# Choose global options that user can modify
+globs = ['TVM rate', 'House cost']
+globsC = [camel_case(glob) for glob in globs]
+numGlobs = len(globs)
+
+# Create Div for global options
+mGlob = [
+    html.H5('Common options')
+]
+for j, (glob, globC) in enumerate(zip(globs,globsC)):
+    mGlob += [
+        html.Label(glob, className='field-label'),    
+        dcc.Input(
+            id='{}'.format(globC),
+            value=str(getattr(mortgageComparison.mortgages[0],globC).value),
+            type='text',
+            n_submit = 0,
+        )
+    ]
+# Add global options to the main group of input divs
+mGroups.append(
+    html.P(mGlob, className='pinput pretty-container')
+)
+
+# Add each mortgage to the main group of input divs
 for i, mortgage in enumerate(mortgageComparison.mortgages):
     mInput = [
-        #html.H5(mortgage.name, style={'color':rgb2hex(mortgage.color)}, className='mortgage-name')
+        #html.H5(mortgage.name, style={'color':rgb2hex(mortgage.color)}, className='mortgage-name') Old way of doing it
         html.H5(
             dcc.Input(
                 id='mortgage-{}-name'.format(i),
@@ -138,19 +131,16 @@ for i, mortgage in enumerate(mortgageComparison.mortgages):
     mGroups.append(
         html.Div(mInput, className='pinput pretty-container')
     )
+# Put mGroups in its own div
 mGroups = html.Div(mGroups,className='input-wrapper'),
 
-globalHtmls = []
-globalHtmls.append(
-    html.Div([
-        html.Label('Home Cost')
-    ])
-)
+# Left panel: all the input divs (mGroups)
 leftPanel = html.Div(
     html.Div(mGroups,className='panel',id='left-panel'),
     #html.Div(className='panel',id='left-panel'), # doesn't work this way yet
     className='left',
 )
+# Right panel: the output plot
 rightPanel = html.Div(
     html.Div(    
         dcc.Graph( id = 'main-plot'),
@@ -159,6 +149,7 @@ rightPanel = html.Div(
     className='right',
 )
 
+# Not sure if we need the layout to be a function yet or not
 def serve_layout():
     return html.Div(children=[
         topNav,
@@ -166,11 +157,9 @@ def serve_layout():
         rightPanel,
     ])
 
-#def serve_layout():
-#    return html.H5('The time is: ' + str(datetime.datetime.now()))
-
 dashApp.layout = serve_layout
 
+# The following function is unused
 @dashApp.callback(
 	Output('left-panel', 'children'),
   	#[Input('div_num_dropdown', 'value')]
@@ -227,6 +216,7 @@ def makeMortgageDivs(num_mortgages=3):
         )
     return html.Div(mGroups,className='input-wrapper'),
 
+# The main plot - NEED TO GET A BETTER WAY OF MAPPING THE INPUTS
 @dashApp.callback(
     Output('main-plot', 'figure'),
     [
@@ -250,7 +240,7 @@ def update_figure(button, *input_values):
     mortgageComparison.update_mortgages(options=globOptions)
 
     for i,mortgage in enumerate(mortgageComparison.mortgages):
-        mortgage.customName = input_values[i]
+        mortgage.customName = input_values[1+i]
         options = dict()
         for j,fieldC in enumerate(fieldsC):
             index = 1+num_mortgages + numGlobs + i + j*num_mortgages
