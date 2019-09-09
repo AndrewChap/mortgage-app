@@ -73,6 +73,7 @@ for j, (glob, globC) in enumerate(zip(globs,globsC)):
             id='{}'.format(globC),
             value=str(getattr(mortgageComparison.mortgages[0],globC).value),
             type='text',
+            n_submit = 0,
         )
     ]
 mGroups.append(
@@ -230,6 +231,7 @@ def makeMortgageDivs(num_mortgages=3):
     Output('main-plot', 'figure'),
     [
         Input('calculate', 'n_clicks'),
+        Input('mortgageRate0', 'n_submit'),
     ],
     [
         *[State('mortgage-{}-name'.format(i), 'value') for i in range(num_mortgages)],
@@ -244,14 +246,14 @@ def update_figure(button, *input_values):
     input_floats = [float(input_value) if type(input_value) == 'float' else input_value for input_value in input_values]
     globOptions = dict()
     for j,globC in enumerate(globsC):
-        globOptions[globC] = input_values[num_mortgages + j]
+        globOptions[globC] = input_values[1+num_mortgages + j]
     mortgageComparison.update_mortgages(options=globOptions)
 
     for i,mortgage in enumerate(mortgageComparison.mortgages):
         mortgage.customName = input_values[i]
         options = dict()
         for j,fieldC in enumerate(fieldsC):
-            index = num_mortgages + numGlobs + i + j*num_mortgages
+            index = 1+num_mortgages + numGlobs + i + j*num_mortgages
             options[fieldC] = input_values[index]
         mortgage.update_mortgage(options=options)    
         mortgage.simulateMortgage()
