@@ -25,12 +25,86 @@ def reverse_enumerate(L):
    for i, n in enumerate(L):
        yield l-i-1, n
 
+
+class CallList:
+    def __init__(self,calls=dict()):
+        self.calls = calls
+        
+callList = CallList()
+
+class CallElement:
+    def __init__(self,name,call,parent=callList):
+        self.parent = parent
+        self.name = name
+        self.call = call
+
+class Call:
+    def __init__(self,**kwargs):
+        for key,val in kwargs.items():
+            setattr(self,key,val)
+        #self.name = name
+        #self.call = call
+        #self.type = type
+        #self.prop = prop
+        #self.parent = parent
+    def input_callback(self):
+        return Input(self.name, self.prop)
+
+        #Input('calculate', 'n_clicks'),
+
+
+class Calls:
+    def __init__(self,callDict=dict()):
+        self.callDict = callDict
+
+    #def add_call(self,name,call,type=None,prop=None,inputKwargs=None,outputKwargs=None):
+    #    call = Call(name=name,call=call,type=type,prop=prop,inputKwargs=inputKwargs,outputKwargs=outputKwargs,parent=self)
+    def add_call(self,**kwargs):
+        call = Call(**kwargs)
+        self.callDict[call.name] = call
+        return call
+
+    def make_kwargs(self,**kwargs):
+        return kwargs
+
+    def dict2list(self):
+        val_list = list()
+        for key,val in self.callDict.items():
+            val_list.append(val)
+        return val_list
+
+    def add_button(self,name,call,text,prop='n_click',**extraKwargs):
+        inputKwargs = {
+            'id': name,
+            prop: 0,
+            'children': text,
+        }
+        return self.add_call(name=name,call=call,prop=prop,inputKwargs=inputKwargs)
+
+    def add_input(self,name,call,text,type='text',prop='n_submit',**extraKwargs):
+        inputKwargs = {
+            'id': name,
+            prop: 0,
+            'value': text,
+            'type': type,
+        }
+        inputKwargs.update(extraKwargs)
+        return self.add_call(name=name,call=call,prop=prop,inputKwargs=inputKwargs)
+
+    #def add_input(self,
+calls = Calls()
+        
 # Create top bar
+calculateButtonCall = calls.add_button(
+    name = 'calculate',
+    call = 'Input',
+    prop = 'n_clicks',
+    text = 'Calculate!',
+)
+
 calculateButton = html.Div(
     html.Button(
-        id='calculate',
-        n_clicks = 0,
-        children='Calculate!'
+        **calculateButtonCall.inputKwargs
     ),
 )
 
@@ -91,13 +165,20 @@ mGlob = [
     html.H5('Common options')
 ]
 for j, (glob, globC) in enumerate(zip(globs,globsC)):
+    inputCall = calls.add_input(
+        name = globC,
+        call = 'Input',
+        prop = 'n_submit',
+        text = str(getattr(mortgageComparison.mortgages[0],globC).value),
+    )
     mGlob += [
         html.Label(glob, className='field-label'),    
         dcc.Input(
-            id='{}'.format(globC),
-            value=str(getattr(mortgageComparison.mortgages[0],globC).value),
-            type='text',
-            n_submit = 0,
+            **inputCall.inputKwargs
+            #id='{}'.format(globC),
+            #value=str(getattr(mortgageComparison.mortgages[0],globC).value),
+            #type='text',
+            #n_submit = 0,
         )
     ]
 # Add global options to the main group of input divs
@@ -107,25 +188,43 @@ mGroups.append(
 
 # Add each mortgage to the main group of input divs
 for i, mortgage in enumerate(mortgageComparison.mortgages):
+    inputCall = calls.add_input(
+        name = 'mortgage-{}-name'.format(i),
+        call = 'Input',
+        prop = 'n_submit',
+        text = mortgage.name,
+        className = 'mortgage-name',
+        style={'color':rgb2hex(mortgage.color)}, 
+    )
     mInput = [
         #html.H5(mortgage.name, style={'color':rgb2hex(mortgage.color)}, className='mortgage-name') Old way of doing it
         html.H5(
             dcc.Input(
-                id='mortgage-{}-name'.format(i),
-                value=mortgage.name,
-                style={'color':rgb2hex(mortgage.color)}, 
-                className='mortgage-name',
-                type='text',
+                **inputCall.inputKwargs
+                #id='mortgage-{}-name'.format(i),
+                #value=mortgage.name,
+                #style={'color':rgb2hex(mortgage.color)}, 
+                #className='mortgage-name',
+                #type='text',
             )
         )
     ]
     for j, (field, fieldC) in enumerate(zip(fields,fieldsC)):
+        inputCall = calls.add_input(
+            name = '{}{}'.format(fieldC,i),
+            call = 'Input',
+            prop = 'value',
+            text = str(getattr(mortgage,fieldC).value),
+            #className = 'mortgage-name',
+            #style={'color':rgb2hex(mortgage.color)}, 
+        )
         mInput += [
             html.Label(field, className='field-label'),
             dcc.Input(
-                id='{}{}'.format(fieldC,i),
-                value=str(getattr(mortgage,fieldC).value),
-                type='text',
+                **inputCall.inputKwargs
+                #id='{}{}'.format(fieldC,i),
+                #value=str(getattr(mortgage,fieldC).value),
+                #type='text',
             )
         ]
     mGroups.append(
@@ -217,11 +316,13 @@ def makeMortgageDivs(num_mortgages=3):
     return html.Div(mGroups,className='input-wrapper'),
 
 # The main plot - NEED TO GET A BETTER WAY OF MAPPING THE INPUTS
-@dashApp.callback(
+callBackList = [
     Output('main-plot', 'figure'),
     [
-        Input('calculate', 'n_clicks'),
-        Input('mortgageRate0', 'n_submit'),
+        calls.callDict['calculate'].input_callback(),
+        #Input('calculate', 'n_clicks'),
+        calls.callDict['mortgageRate0'].input_callback(),
+        #Input('mortgageRate0', 'n_submit'),
     ],
     [
         *[State('mortgage-{}-name'.format(i), 'value') for i in range(num_mortgages)],
@@ -231,7 +332,8 @@ def makeMortgageDivs(num_mortgages=3):
         *[State('downPayment{}'.format(i), 'value') for i in range(num_mortgages)], 
         *[State('originationFees{}'.format(i), 'value') for i in range(num_mortgages)],
     ], 
-)
+]
+@dashApp.callback(*callBackList)
 def update_figure(button, *input_values):
     input_floats = [float(input_value) if type(input_value) == 'float' else input_value for input_value in input_values]
     globOptions = dict()
