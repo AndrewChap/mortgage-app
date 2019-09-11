@@ -54,14 +54,18 @@ class Call:
 
 
 class Calls:
-    def __init__(self,callDict=dict()):
+    def __init__(self,callDict=dict(),callList=list()):
         self.callDict = callDict
+        self.callList = callList
 
     #def add_call(self,name,call,type=None,prop=None,inputKwargs=None,outputKwargs=None):
     #    call = Call(name=name,call=call,type=type,prop=prop,inputKwargs=inputKwargs,outputKwargs=outputKwargs,parent=self)
     def add_call(self,**kwargs):
+        callIndex = len(self.callList)
+        kwargs.update({'index': callIndex})
         call = Call(**kwargs)
         self.callDict[call.name] = call
+        self.callList.append(call)
         return call
 
     def make_kwargs(self,**kwargs):
