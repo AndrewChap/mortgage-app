@@ -42,6 +42,11 @@ class Call:
     def __init__(self,**kwargs):
         for key,val in kwargs.items():
             setattr(self,key,val)
+
+        if self.call == 'Input':
+            self.callback = Input(self.name,self.prop)
+        elif self.call == 'State':
+            self.callback = State(self.name,self.prop)
         #self.name = name
         #self.call = call
         #self.type = type
@@ -49,6 +54,9 @@ class Call:
         #self.parent = parent
     def input_callback(self):
         return Input(self.name, self.prop)
+
+    def __repr__(self):
+        return '\nCall(' + ', '.join(["'{}':'{}'".format(key,val) for key,val in self.__dict__.items()]) + ')'
 
         #Input('calculate', 'n_clicks'),
 
@@ -65,11 +73,24 @@ class Calls:
         kwargs.update({'index': callIndex})
         call = Call(**kwargs)
         self.callDict[call.name] = call
-        self.callList.append(call)
+        self.callList.append(call.callback)
+        if call.prop == 'State':
+            callIndex = len(self.listStates)
+            kwargs.update({'index': callIndex})
+            self.listStates.append(call.callback)
+        elif call.prop == 'Input':
+            callIndex = len(self.listInputs)
+            kwargs.update({'index': callIndex})
+            self.listInputs.append(call.callback)
         return call
 
     def make_kwargs(self,**kwargs):
         return kwargs
+    
+    def update_state_indices(self):
+        for key,val in self.callDict:
+            if val.prop == 'State':
+                val.index += len(self.listInputs)
 
     def dict2list(self):
         val_list = list()
@@ -171,7 +192,7 @@ mGlob = [
 for j, (glob, globC) in enumerate(zip(globs,globsC)):
     inputCall = calls.add_input(
         name = globC,
-        call = 'Input',
+        call = 'State',
         prop = 'n_submit',
         text = str(getattr(mortgageComparison.mortgages[0],globC).value),
     )
@@ -194,7 +215,7 @@ mGroups.append(
 for i, mortgage in enumerate(mortgageComparison.mortgages):
     inputCall = calls.add_input(
         name = 'mortgage-{}-name'.format(i),
-        call = 'Input',
+        call = 'State',
         prop = 'n_submit',
         text = mortgage.name,
         className = 'mortgage-name',
@@ -325,7 +346,7 @@ callBackList = [
     [
         calls.callDict['calculate'].input_callback(),
         #Input('calculate', 'n_clicks'),
-        calls.callDict['mortgageRate0'].input_callback(),
+        #calls.callDict['mortgageRate0'].input_callback(),
         #Input('mortgageRate0', 'n_submit'),
     ],
     [
@@ -337,19 +358,24 @@ callBackList = [
         *[State('originationFees{}'.format(i), 'value') for i in range(num_mortgages)],
     ], 
 ]
+
+
 @dashApp.callback(*callBackList)
 def update_figure(button, *input_values):
     input_floats = [float(input_value) if type(input_value) == 'float' else input_value for input_value in input_values]
     globOptions = dict()
+    for globC in globsC:
+        globOptions[globC] = calls.callDict[globC].callback
     for j,globC in enumerate(globsC):
-        globOptions[globC] = input_values[1+num_mortgages + j]
+        globOptions[globC] = input_values[num_mortgages + j]
     mortgageComparison.update_mortgages(options=globOptions)
 
     for i,mortgage in enumerate(mortgageComparison.mortgages):
-        mortgage.customName = input_values[1+i]
+        mortgage.customName = input_values[i]
         options = dict()
         for j,fieldC in enumerate(fieldsC):
-            index = 1+num_mortgages + numGlobs + i + j*num_mortgages
+            index = num_mortgages + numGlobs + i + j*num_mortgages
+            #options[fieldC] = calls.callDict[
             options[fieldC] = input_values[index]
         mortgage.update_mortgage(options=options)    
         mortgage.simulateMortgage()
