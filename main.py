@@ -25,41 +25,16 @@ def reverse_enumerate(L):
    for i, n in enumerate(L):
        yield l-i-1, n
 
-
-class CallList:
-    def __init__(self,calls=dict()):
-        self.calls = calls
-        
-callList = CallList()
-
-class CallElement:
-    def __init__(self,name,call,parent=callList):
-        self.parent = parent
-        self.name = name
-        self.call = call
-
 class Call:
     def __init__(self,**kwargs):
         for key,val in kwargs.items():
             setattr(self,key,val)
-
-        if self.call == 'Input':
-            self.callback = Input(self.name,self.prop)
-        elif self.call == 'State':
-            self.callback = State(self.name,self.prop)
-        #self.name = name
-        #self.call = call
-        #self.type = type
-        #self.prop = prop
-        #self.parent = parent
+        self.callback = self.call(self.name,self.prop)    
     def input_callback(self):
         return Input(self.name, self.prop)
 
     def __repr__(self):
         return '\nCall(' + ', '.join(["'{}':'{}'".format(key,val) for key,val in self.__dict__.items()]) + ')'
-
-        #Input('calculate', 'n_clicks'),
-
 
 class Calls:
     def __init__(self,callDict=dict(),callList=list()):
@@ -68,19 +43,17 @@ class Calls:
         self.listInputs = list()
         self.listStates = list()
 
-    #def add_call(self,name,call,type=None,prop=None,inputKwargs=None,outputKwargs=None):
-    #    call = Call(name=name,call=call,type=type,prop=prop,inputKwargs=inputKwargs,outputKwargs=outputKwargs,parent=self)
     def add_call(self,**kwargs):
         callIndex = len(self.callList)
         kwargs.update({'index': callIndex})
         call = Call(**kwargs)
         self.callDict[call.name] = call
         self.callList.append(call.callback)
-        if call.call == 'State':
+        if call.call == State:
             callIndex = len(self.listStates)
             kwargs.update({'index': callIndex})
             self.listStates.append(call.callback)
-        elif call.call == 'Input':
+        elif call.call == Input:
             callIndex = len(self.listInputs)+1
             kwargs.update({'index': callIndex})
             self.listInputs.append(call.callback)
@@ -119,13 +92,12 @@ class Calls:
         inputKwargs.update(extraKwargs)
         return self.add_call(name=name,call=call,prop=prop,inputKwargs=inputKwargs)
 
-    #def add_input(self,
 calls = Calls()
         
 # Create top bar
 calculateButtonCall = calls.add_button(
     name = 'calculate',
-    call = 'Input',
+    call = Input,
     prop = 'n_clicks',
     text = 'Calculate!',
 )
@@ -195,7 +167,7 @@ mGlob = [
 for j, (glob, globC) in enumerate(zip(globs,globsC)):
     inputCall = calls.add_input(
         name = globC,
-        call = 'State',
+        call = State,
         prop = 'value',
         text = str(getattr(mortgageComparison.mortgages[0],globC).value),
     )
@@ -203,10 +175,6 @@ for j, (glob, globC) in enumerate(zip(globs,globsC)):
         html.Label(glob, className='field-label'),    
         dcc.Input(
             **inputCall.inputKwargs
-            #id='{}'.format(globC),
-            #value=str(getattr(mortgageComparison.mortgages[0],globC).value),
-            #type='text',
-            #n_submit = 0,
         )
     ]
 # Add global options to the main group of input divs
@@ -218,41 +186,30 @@ mGroups.append(
 for i, mortgage in enumerate(mortgageComparison.mortgages):
     inputCall = calls.add_input(
         name = 'mortgage-{}-name'.format(i),
-        call = 'State',
+        call = State,
         prop = 'value',
         text = mortgage.name,
         className = 'mortgage-name',
         style={'color':rgb2hex(mortgage.color)}, 
     )
     mInput = [
-        #html.H5(mortgage.name, style={'color':rgb2hex(mortgage.color)}, className='mortgage-name') Old way of doing it
         html.H5(
             dcc.Input(
                 **inputCall.inputKwargs
-                #id='mortgage-{}-name'.format(i),
-                #value=mortgage.name,
-                #style={'color':rgb2hex(mortgage.color)}, 
-                #className='mortgage-name',
-                #type='text',
             )
         )
     ]
     for j, (field, fieldC) in enumerate(zip(fields,fieldsC)):
         inputCall = calls.add_input(
             name = '{}{}'.format(fieldC,i),
-            call = 'State',
+            call = State,
             prop = 'value',
             text = str(getattr(mortgage,fieldC).value),
-            #className = 'mortgage-name',
-            #style={'color':rgb2hex(mortgage.color)}, 
         )
         mInput += [
             html.Label(field, className='field-label'),
             dcc.Input(
                 **inputCall.inputKwargs
-                #id='{}{}'.format(fieldC,i),
-                #value=str(getattr(mortgage,fieldC).value),
-                #type='text',
             )
         ]
     mGroups.append(
