@@ -65,6 +65,8 @@ class Calls:
     def __init__(self,callDict=dict(),callList=list()):
         self.callDict = callDict
         self.callList = callList
+        self.listInputs = list()
+        self.listStates = list()
 
     #def add_call(self,name,call,type=None,prop=None,inputKwargs=None,outputKwargs=None):
     #    call = Call(name=name,call=call,type=type,prop=prop,inputKwargs=inputKwargs,outputKwargs=outputKwargs,parent=self)
@@ -74,12 +76,12 @@ class Calls:
         call = Call(**kwargs)
         self.callDict[call.name] = call
         self.callList.append(call.callback)
-        if call.prop == 'State':
+        if call.call == 'State':
             callIndex = len(self.listStates)
             kwargs.update({'index': callIndex})
             self.listStates.append(call.callback)
-        elif call.prop == 'Input':
-            callIndex = len(self.listInputs)
+        elif call.call == 'Input':
+            callIndex = len(self.listInputs)+1
             kwargs.update({'index': callIndex})
             self.listInputs.append(call.callback)
         return call
@@ -88,9 +90,10 @@ class Calls:
         return kwargs
     
     def update_state_indices(self):
-        for key,val in self.callDict:
+        for key,val in self.callDict.items():
             if val.prop == 'State':
                 val.index += len(self.listInputs)
+        self.callList = [self.listInputs,self.listStates]        
 
     def dict2list(self):
         val_list = list()
@@ -193,7 +196,7 @@ for j, (glob, globC) in enumerate(zip(globs,globsC)):
     inputCall = calls.add_input(
         name = globC,
         call = 'State',
-        prop = 'n_submit',
+        prop = 'value',
         text = str(getattr(mortgageComparison.mortgages[0],globC).value),
     )
     mGlob += [
@@ -216,7 +219,7 @@ for i, mortgage in enumerate(mortgageComparison.mortgages):
     inputCall = calls.add_input(
         name = 'mortgage-{}-name'.format(i),
         call = 'State',
-        prop = 'n_submit',
+        prop = 'value',
         text = mortgage.name,
         className = 'mortgage-name',
         style={'color':rgb2hex(mortgage.color)}, 
@@ -237,7 +240,7 @@ for i, mortgage in enumerate(mortgageComparison.mortgages):
     for j, (field, fieldC) in enumerate(zip(fields,fieldsC)):
         inputCall = calls.add_input(
             name = '{}{}'.format(fieldC,i),
-            call = 'Input',
+            call = 'State',
             prop = 'value',
             text = str(getattr(mortgage,fieldC).value),
             #className = 'mortgage-name',
@@ -359,24 +362,29 @@ callBackList = [
     ], 
 ]
 
-
-@dashApp.callback(*callBackList)
-def update_figure(button, *input_values):
+calls.update_state_indices()
+calls.callList = [Output('main-plot', 'figure')] + calls.callList
+#@dashApp.callback(*callBackList)
+@dashApp.callback(*calls.callList)
+#def update_figure(button, *input_values):
+def update_figure(*input_values):
     input_floats = [float(input_value) if type(input_value) == 'float' else input_value for input_value in input_values]
     globOptions = dict()
     for globC in globsC:
-        globOptions[globC] = calls.callDict[globC].callback
-    for j,globC in enumerate(globsC):
-        globOptions[globC] = input_values[num_mortgages + j]
+        globOptions[globC] = input_floats[calls.callDict[globC].index]
+#    for j,globC in enumerate(globsC):
+#        globOptions[globC] = input_values[num_mortgages + j]
     mortgageComparison.update_mortgages(options=globOptions)
 
     for i,mortgage in enumerate(mortgageComparison.mortgages):
-        mortgage.customName = input_values[i]
+        #mortgage.customName = input_values[i]
+        mortgage.customName = input_values[calls.callDict['mortgage-{}-name'.format(i)].index]
+
         options = dict()
         for j,fieldC in enumerate(fieldsC):
             index = num_mortgages + numGlobs + i + j*num_mortgages
-            #options[fieldC] = calls.callDict[
-            options[fieldC] = input_values[index]
+            #options[fieldC] = input_values[index]
+            options[fieldC] = input_values[calls.callDict['{}{}'.format(fieldC,i)].index]
         mortgage.update_mortgage(options=options)    
         mortgage.simulateMortgage()
     ymin = 0.0
