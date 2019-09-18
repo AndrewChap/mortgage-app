@@ -105,7 +105,6 @@ class Scenes:
 
     def add_scene(self,scene):
         self.scenesList.append(scene)
-
         
 # Create top bar
 calculateButtonCall = calls.add_button(
@@ -390,7 +389,7 @@ def serve_layout():
 #------------------------------------ 
 
 class DivClass:
-    def __init__(self,name,active=True):
+    def __init__(self,name,active=False):
         self.name = name
         self.buttonName = '{}-button'.format(self.name)
         self.active = active
@@ -449,6 +448,21 @@ class DivsClass:
         return -1
     def hide_inactive_divs(self):
         pass
+    def deactivate(self,closureList):
+        for index in closureList:
+            if index is not None:
+                self.divsList[index].deactivate()
+        self.reorder_list()
+    def reorder_list(self):
+        activeList = []
+        inactiveList = []
+        for div in self.divsList:
+            if div.active:
+                activeList.append(div)
+            else:
+                inactiveList.append(div)
+        self.divsList = activeList + inactiveList
+
                 
 divs = DivsClass()
 for i in range(5):
@@ -481,16 +495,14 @@ dashApp.layout = html.Div(
 @dashApp.callback(
     Output('div_variable', 'children'),
     [Input('add_div','n_clicks')] + [Input(div.buttonName,'n_clicks') for div in divs.divsList]
-    #[Input('add_div','n_clicks')]
-    #[Input('add_div','n_clicks'),Input('div-0-button','n_clicks')]
-    #[Input('add_div','n_clicks'),Input('useless','n_clicks')]
 )
 def update_div(n_clicks,*n_closes):
     if n_clicks is None:
         n_clicks = 0
-    for i,div in enumerate(divs.divsList):
-        if n_closes[i] is not None:
-            div.deactivate()
+    divs.deactivate(n_closes)    
+    #for i,div in enumerate(divs.divsList):
+    #    if n_closes[i] is not None:
+    #        div.deactivate()
     print(n_closes)    
     print('n_clicks = {}'.format(n_clicks))
     divs.activate_on_click(n_clicks)
