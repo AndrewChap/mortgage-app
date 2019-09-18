@@ -93,6 +93,19 @@ class Calls:
         return self.add_call(name=name,call=call,prop=prop,inputKwargs=inputKwargs)
 
 calls = Calls()
+
+class Scene:
+    def __init__(self,mortgage,active=True):
+        self.mortgage = mortgage
+        self.active = active
+
+class Scenes:
+    def __init__(self,scenesList=list()):
+        self.scenesList = scenesList
+
+    def add_scene(self,scene):
+        self.scenesList.append(scene)
+
         
 # Create top bar
 calculateButtonCall = calls.add_button(
@@ -132,11 +145,14 @@ mortgageComparison.setDefaults(tvmRate       = '0.0%',
                                rentalRate    = '0.0%',
                                houseCost     = '$1',)
 
+scenes = Scenes()
+
 # Create mortgages
 for i in range(num_mortgages):
     mortgageComparison.addMortgage(
         name = 'Mortgage {}'.format(i+1)
     )
+    scenes.add_scene(mortgageComparison.mortgages[-1])
 
 mortgageComparison.simulateMortgages()    
 
@@ -241,138 +257,203 @@ def serve_layout():
         rightPanel,
     ])
 
-dashApp.layout = serve_layout
+#dashApp.layout = serve_layout
 
 # The following function is unused
-@dashApp.callback(
-	Output('left-panel', 'children'),
-  	#[Input('div_num_dropdown', 'value')]
-)
-def makeMortgageDivs(num_mortgages=3):
-    mortgageComparison = mort.MortgageComparison()
-    mortgageComparison.setDefaults(tvmRate       = '0.0%',
-                                   mortgageRate  = '4.0%',
-                                   downPayment   = '0.2',
-                                   inflationRate = '0.0%',
-                                   rentalRate    = '0.0%',
-                                   houseCost     = '$1',)
-
-    num_mortgages = 3
-    for i in range(num_mortgages):
-        mortgageComparison.addMortgage(
-            name = 'Mortgage {}'.format(i+1)
-        )
-
-    mortgageComparison.simulateMortgages()    
-    mGroups = []
-    # Create column for global options
-    mGlob = [
-        html.H5('Common options')
-    ]
-    for j, (glob, globC) in enumerate(zip(globs,globsC)):
-        mGlob += [
-            html.Label(glob, className='field-label'),    
-            dcc.Input(
-                id='{}'.format(globC),
-                value=str(getattr(mortgageComparison.mortgages[0],globC).value),
-                type='text',
-            )
-        ]
-    mGroups.append(
-        html.P(mGlob, className='pinput pretty-container')
-    )
-    for i, mortgage in enumerate(mortgageComparison.mortgages):
-        mInput = [
-                #html.H5(mortgage.name, style={'color':rgb2hex(mortgage.color)}, className='mortgage-name')
-                dcc.Input(mortgage.name, style={'color':rgb2hex(mortgage.color)}, className='mortgage-name')
-        ]
-        for j, (field, fieldC) in enumerate(zip(fields,fieldsC)):
-            mInput += [
-                html.Label(field, className='field-label'),
-                dcc.Input(
-                    id='{}{}'.format(fieldC,i),
-                    value=str(getattr(mortgage,fieldC).value),
-                    type='text',
-                )
-            ]
-        mGroups.append(
-            html.Div(mInput, className='pinput pretty-container')
-        )
-    return html.Div(mGroups,className='input-wrapper'),
-
-# The main plot - NEED TO GET A BETTER WAY OF MAPPING THE INPUTS
-callBackList = [
-    Output('main-plot', 'figure'),
-    [
-        calls.callDict['calculate'].input_callback(),
-        #Input('calculate', 'n_clicks'),
-        #calls.callDict['mortgageRate0'].input_callback(),
-        #Input('mortgageRate0', 'n_submit'),
-    ],
-    [
-        *[State('mortgage-{}-name'.format(i), 'value') for i in range(num_mortgages)],
-        State('tvmRate', 'value'), 
-        State('houseCost','value'),
-        *[State('mortgageRate{}'.format(i), 'value') for i in range(num_mortgages)], 
-        *[State('downPayment{}'.format(i), 'value') for i in range(num_mortgages)], 
-        *[State('originationFees{}'.format(i), 'value') for i in range(num_mortgages)],
-    ], 
-]
-
-calls.update_state_indices()
-calls.callList = [Output('main-plot', 'figure')] + calls.callList
+#@dashApp.callback(
+#	Output('left-panel', 'children'),
+#  	#[Input('div_num_dropdown', 'value')]
+#)
+#def makeMortgageDivs(num_mortgages=3):
+#    mortgageComparison = mort.MortgageComparison()
+#    mortgageComparison.setDefaults(tvmRate       = '0.0%',
+#                                   mortgageRate  = '4.0%',
+#                                   downPayment   = '0.2',
+#                                   inflationRate = '0.0%',
+#                                   rentalRate    = '0.0%',
+#                                   houseCost     = '$1',)
+#
+#    num_mortgages = 3
+#    for i in range(num_mortgages):
+#        mortgageComparison.addMortgage(
+#            name = 'Mortgage {}'.format(i+1)
+#        )
+#
+#    mortgageComparison.simulateMortgages()    
+#    mGroups = []
+#    # Create column for global options
+#    mGlob = [
+#        html.H5('Common options')
+#    ]
+#    for j, (glob, globC) in enumerate(zip(globs,globsC)):
+#        mGlob += [
+#            html.Label(glob, className='field-label'),    
+#            dcc.Input(
+#                id='{}'.format(globC),
+#                value=str(getattr(mortgageComparison.mortgages[0],globC).value),
+#                type='text',
+#            )
+#        ]
+#    mGroups.append(
+#        html.P(mGlob, className='pinput pretty-container')
+#    )
+#    for i, mortgage in enumerate(mortgageComparison.mortgages):
+#        mInput = [
+#                #html.H5(mortgage.name, style={'color':rgb2hex(mortgage.color)}, className='mortgage-name')
+#                dcc.Input(mortgage.name, style={'color':rgb2hex(mortgage.color)}, className='mortgage-name')
+#        ]
+#        for j, (field, fieldC) in enumerate(zip(fields,fieldsC)):
+#            mInput += [
+#                html.Label(field, className='field-label'),
+#                dcc.Input(
+#                    id='{}{}'.format(fieldC,i),
+#                    value=str(getattr(mortgage,fieldC).value),
+#                    type='text',
+#                )
+#            ]
+#        mGroups.append(
+#            html.Div(mInput, className='pinput pretty-container')
+#        )
+#    return html.Div(mGroups,className='input-wrapper'),
+#
+## The main plot - NEED TO GET A BETTER WAY OF MAPPING THE INPUTS
+#callBackList = [
+#    Output('main-plot', 'figure'),
+#    [
+#        calls.callDict['calculate'].input_callback(),
+#        #Input('calculate', 'n_clicks'),
+#        #calls.callDict['mortgageRate0'].input_callback(),
+#        #Input('mortgageRate0', 'n_submit'),
+#    ],
+#    [
+#        *[State('mortgage-{}-name'.format(i), 'value') for i in range(num_mortgages)],
+#        State('tvmRate', 'value'), 
+#        State('houseCost','value'),
+#        *[State('mortgageRate{}'.format(i), 'value') for i in range(num_mortgages)], 
+#        *[State('downPayment{}'.format(i), 'value') for i in range(num_mortgages)], 
+#        *[State('originationFees{}'.format(i), 'value') for i in range(num_mortgages)],
+#    ], 
+#]
+#
+#calls.update_state_indices()
+#calls.callList = [Output('main-plot', 'figure')] + calls.callList
 #@dashApp.callback(*callBackList)
-@dashApp.callback(*calls.callList)
-#def update_figure(button, *input_values):
-def update_figure(*input_values):
-    input_floats = [float(input_value) if type(input_value) == 'float' else input_value for input_value in input_values]
-    globOptions = dict()
-    for globC in globsC:
-        globOptions[globC] = input_floats[calls.callDict[globC].index]
-#    for j,globC in enumerate(globsC):
-#        globOptions[globC] = input_values[num_mortgages + j]
-    mortgageComparison.update_mortgages(options=globOptions)
+#@dashApp.callback(*calls.callList)
+##def update_figure(button, *input_values):
+#def update_figure(*input_values):
+#    input_floats = [float(input_value) if type(input_value) == 'float' else input_value for input_value in input_values]
+#    globOptions = dict()
+#    for globC in globsC:
+#        globOptions[globC] = input_floats[calls.callDict[globC].index]
+##    for j,globC in enumerate(globsC):
+##        globOptions[globC] = input_values[num_mortgages + j]
+#    mortgageComparison.update_mortgages(options=globOptions)
+#
+#    for i,mortgage in enumerate(mortgageComparison.mortgages):
+#        #mortgage.customName = input_values[i]
+#        mortgage.customName = input_values[calls.callDict['mortgage-{}-name'.format(i)].index]
+#
+#        options = dict()
+#        for j,fieldC in enumerate(fieldsC):
+#            index = num_mortgages + numGlobs + i + j*num_mortgages
+#            #options[fieldC] = input_values[index]
+#            options[fieldC] = input_values[calls.callDict['{}{}'.format(fieldC,i)].index]
+#        mortgage.update_mortgage(options=options)    
+#        mortgage.simulateMortgage()
+#    ymin = 0.0
+#    ymax = 2.0
+#    ymax = max([mortgage.houseCost.value for mortgage in mortgageComparison.mortgages] + [np.amax(mortgage.totalAmountSpent.data) for mortgage in mortgageComparison.mortgages])
+#    data = [{
+#        'x': mortgage.timeVector.data, 
+#        'y': mortgage.totalAmountSpent.data,
+#        'name': mortgage.customName,
+#        'line': {
+#            'color': rgb2hex(mortgage.color),
+#            }
+#        }
+#        for i,mortgage in enumerate(reversed(mortgageComparison.mortgages))]
+#    return {
+#        'data': data,
+#        'layout': {
+#            'xaxis': {
+#                'title': 'Time (years)',
+#            },
+#            'yaxis': {
+#                'title': 'Amount paid towards home',
+#                'range': [ymin, ymax],
+#            },
+#            'margin': {'t': 30, 'b': 30},
+#            'legend': {'traceorder': 'reversed'},
+#        }
+#    }
 
-    for i,mortgage in enumerate(mortgageComparison.mortgages):
-        #mortgage.customName = input_values[i]
-        mortgage.customName = input_values[calls.callDict['mortgage-{}-name'.format(i)].index]
+#------------------------------------ 
 
-        options = dict()
-        for j,fieldC in enumerate(fieldsC):
-            index = num_mortgages + numGlobs + i + j*num_mortgages
-            #options[fieldC] = input_values[index]
-            options[fieldC] = input_values[calls.callDict['{}{}'.format(fieldC,i)].index]
-        mortgage.update_mortgage(options=options)    
-        mortgage.simulateMortgage()
-    ymin = 0.0
-    ymax = 2.0
-    ymax = max([mortgage.houseCost.value for mortgage in mortgageComparison.mortgages] + [np.amax(mortgage.totalAmountSpent.data) for mortgage in mortgageComparison.mortgages])
-    data = [{
-        'x': mortgage.timeVector.data, 
-        'y': mortgage.totalAmountSpent.data,
-        'name': mortgage.customName,
-        'line': {
-            'color': rgb2hex(mortgage.color),
-            }
-        }
-        for i,mortgage in enumerate(reversed(mortgageComparison.mortgages))]
-    return {
-        'data': data,
-        'layout': {
-            'xaxis': {
-                'title': 'Time (years)',
-            },
-            'yaxis': {
-                'title': 'Amount paid towards home',
-                'range': [ymin, ymax],
-            },
-            'margin': {'t': 30, 'b': 30},
-            'legend': {'traceorder': 'reversed'},
-        }
-    }
+class DivClass:
+    def __init__(self,name,active=True):
+        self.name = name
+        self.buttonName = '{}-button'.format(self.name)
+        self.active = active
+        self.make_div()
+    def make_div(self):
+        if self.active:
+            display = 'block'
+        else:
+            display = 'none'
+        self.div = html.Div(
+            [
+                html.Div(
+                    self.name,
+                ),
+                html.Button(
+                    'x',
+                    id = self.buttonName,
+                )
+            ],
+            style={'display': display},
+        )
+    def deactivate(self):
+        self.active = False
+        self.make_div()
 
+class DivsClass:
+    def __init__(self,divsList=[]):
+        self.divsList = divsList
+        self.lastNclicks = 0
+    def add_div(self,name):
+        self.divsList.append(DivClass(name))
+    def return_all_divs(self):
+        returnList = []
+        for div in self.divsList:
+            returnList.append(div.div)
+        return returnList
+    def return_divs(self):
+        returnList = []
+        for div in self.divsList:
+            if div.active:
+                returnList.append(div.div)
+        return returnList
+    def activate_on_click(self,n_clicks):
+        if divs.lastNclicks != n_clicks:
+            divs.lastNclicks = n_clicks
+            print('activating div!')
+            for div in self.divsList:
+                if not div.active:
+                    div.active = True
+                    div.make_div()
+                    return
+    def find_first_inactive_div(self):
+        for i,div in self.divsList:
+            if not div.active:
+                return i
+        return -1
+    def hide_inactive_divs(self):
+        pass
+                
+divs = DivsClass()
+for i in range(5):
+    divs.add_div(name='div-{}'.format(i))
 
-    '''
 dashApp.layout = html.Div(
     [
         dcc.Dropdown(
@@ -380,17 +461,51 @@ dashApp.layout = html.Div(
             options=[{'label':i, 'value':i} for i in range (5)],
             value=1
         ),
-        html.Div(id='div_variable')
+        html.Div(
+            [
+                html.Button(
+                    'add div',
+                    id='add_div',
+                ),
+                html.Button(
+                    'useless button',
+                    id='useless',
+                ),
+            ],
+            className = 'top-nav',
+        ),
+        html.Div(id='div_variable',children=divs.return_all_divs())
+
     ]
 )
-
 @dashApp.callback(
     Output('div_variable', 'children'),
-    [Input('div_num_dropdown', 'value')]
+    [Input('add_div','n_clicks')] + [Input(div.buttonName,'n_clicks') for div in divs.divsList]
+    #[Input('add_div','n_clicks')]
+    #[Input('add_div','n_clicks'),Input('div-0-button','n_clicks')]
+    #[Input('add_div','n_clicks'),Input('useless','n_clicks')]
 )
-def update_div(num_div):
-    return [html.Div(children=f'Div #{i}') for i in range (num_div)]
-'''
+def update_div(n_clicks,*n_closes):
+    if n_clicks is None:
+        n_clicks = 0
+    for i,div in enumerate(divs.divsList):
+        if n_closes[i] is not None:
+            div.deactivate()
+    print(n_closes)    
+    print('n_clicks = {}'.format(n_clicks))
+    divs.activate_on_click(n_clicks)
+    divs.hide_inactive_divs()
+    return divs.return_all_divs()
+    #return divs[:num_div] #[html.Div(children=f'Div #{i}') for i in range (num_div)]
+#for div in divs.divsList:
+#     @dashApp.callback(
+#         Output(div.buttonName, 'style'),
+#         [Input('num_people_slider', 'value')]
+#     )
+#     def callback(divActive,    
+
+ 
+#+ [Input(div.buttonName,'n_clicks') for div in divs.divsList[0:1]]
 
 @server.errorhandler(500)
 def server_error(e):

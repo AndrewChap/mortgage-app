@@ -6,10 +6,11 @@ dash-renderer==1.0.0
 dash-table==4.1.0
 Flask==1.1.1
 Flask-Compress==1.4.0
+gunicorn==19.9.0
 itsdangerous==1.1.0
 Jinja2==2.10.1
 MarkupSafe==1.1.1
--e git+https://github.com/AndrewChap/mortgagetvm.git@5bba92b99f1c2f4547577bb177b7e7b52b3f7c55#egg=mortgagetvm
+-e git+https://github.com/AndrewChap/mortgagetvm.git@9be47371983f2f883be74c02e3eddad2746b6eb9#egg=mortgagetvm
 numpy==1.17.0
 pandas==0.24.2
 plotly==4.1.0
