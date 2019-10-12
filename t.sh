@@ -4,4 +4,6 @@
 pkill -9 -f python3
 
 # launch dash app
-python3 main.py
+echo python3 $1
+python3 $1
+#python3 main.py
