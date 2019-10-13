@@ -98,6 +98,7 @@ class InputBox:
     def __init__(self,parent,index,active=False):
         #super().__init__(name=name,kinds=['Input'])
         self.name = 'div-{}'.format(index)
+        self.displayName = 'Mortage {}'.format(index)
         self.index = index
         self.container = DynamicElement(name = '{}-container'.format(self.name),parent=self,active=active)
         closeContainerOperation = self.container.deactivate
@@ -111,7 +112,7 @@ class InputBox:
         self.mortgage = mortgage
     def make_div(self):
         children = [
-            html.Div(self.name),
+            html.Div(self.displayName),
             # Button to close the div
             html.Button(
                 'x',
