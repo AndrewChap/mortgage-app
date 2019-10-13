@@ -37,7 +37,7 @@ dashApp = dash.Dash(
     #suppress_callback_exceptions=True,
 )
 
-class AllObjects:
+class InteractiveObjectsOrganizer:
     def __init__(self):
         self.dict = dict()
         self.inputList = list()
@@ -51,15 +51,16 @@ class AllObjects:
     def get(self,name):
         return self.dict[name]
 
-allObjects = AllObjects()
+interactiveDivsOrganizer = InteractiveObjectsOrganizer()
 
 class InteractiveElement:
-    def __init__(self,name,parent,operation):
+    def __init__(self,name,parent,operation,organizer):
         self.name = name
         self.parent = parent
         self.operation = operation
         self.input = Input(self.name,'n_clicks')
-        allObjects.put(self)
+        self.organizer = organizer
+        self.organizer.put(self)
 
 class DynamicElement:
     def __init__(self,name,parent,active=False):
@@ -102,7 +103,11 @@ class InputBox:
         self.index = index
         self.container = DynamicElement(name = '{}-container'.format(self.name),parent=self,active=active)
         closeContainerOperation = self.container.deactivate
-        self.closeButton = InteractiveElement(name = '{}-closeButton'.format(self.name),parent=self,operation=closeContainerOperation)
+        self.closeButton = InteractiveElement(
+                name = '{}-closeButton'.format(self.name),
+                parent=self,
+                operation=closeContainerOperation,
+                organizer=interactiveDivsOrganizer)
         self.fields = [],
         #self.inputs['Input'] = Input(self.closeButton,'n_clicks')
         #self.active = active
@@ -152,22 +157,6 @@ class InputBoxes:
                 if not inputBox.container.active:
                     inputBox.container.activate()
                     return
-    #def find_div_by_index(self,index):
-    #    for div in self.boxesList:
-    #        if div.index == index:
-    #            return div
-    #    return -1    
-    #def deactivate(self,closureList):
-    #    for index,closure in enumerate(closureList):
-    #        if closure is not None:
-    #            self.find_div_by_index(index).deactivate()
-    #    self.reorder_list()
-    #def deactivate_by_name(self,closeButton):
-    #    index = closeButton[10]
-    #    divToDeactivate = self.find_div_by_index(index)
-    #    if divToDeactivate != -1:
-    #        divToDeactivate.deactivate()
-    #        self.reorder_list()
 
     def reorder_list(self):
         activeList = []
@@ -192,8 +181,6 @@ mortgageComparison.setDefaults(tvmRate       = '0.0%',
                                rentalRate    = '0.0%',
                                houseCost     = '$1',)
 
-
-
 inputBoxes = InputBoxes()
 for i in range(max_input_boxes):
     if i < init_input_boxes:
@@ -209,7 +196,11 @@ for i in range(max_input_boxes):
 mortgageComparison.simulateMortgages()    
 
 addNewMortgageOperation = inputBoxes.activate_next_box
-addNewMortgageButton = InteractiveElement(name = 'addNewButton',parent=None,operation=addNewMortgageOperation)
+addNewMortgageButton = InteractiveElement(
+        name = 'addNewButton',
+        parent=None,
+        operation=addNewMortgageOperation,
+        organizer=interactiveDivsOrganizer)
 
 dashApp.layout = html.Div(
     [
@@ -243,8 +234,8 @@ dashApp.layout = html.Div(
 )
 @dashApp.callback(
     Output('div_variable', 'children'),
-    allObjects.inputList,
-    allObjects.stateList,
+    interactiveDivsOrganizer.inputList,
+    interactiveDivsOrganizer.stateList,
 )
 #def update_div(n_clicks,*n_closes):
 def update_div(*inputs):
@@ -255,7 +246,7 @@ def update_div(*inputs):
     triggerVal = trigger['value']
     print('ctx.triggered = {}'.format(ctx.triggered))
     print('TRIG - {}: {}'.format(triggerObj,triggerVal))
-    allObjects.get(triggerObj).operation(triggerVal)
+    interactiveDivsOrganizer.get(triggerObj).operation(triggerVal)
     return inputBoxes.return_all_divs()
 
 @server.errorhandler(500)
