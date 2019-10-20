@@ -71,8 +71,9 @@ class DynamicElement:
         if children is not None:
             self.children = children
         self.div = html.Div(children,style={})     
-        self.set_visibility(active)
+        self.set_visibility(active = self.active)
     def set_visibility(self,active):
+        print('set visibility of {} to {}'.format(self.name,active))
         self.active = active
         display = 'block' if active else 'none'
         self.div.style.update({'display':display})
@@ -93,10 +94,36 @@ globs = ['TVM rate', 'House cost']
 globsC = [camel_case(glob) for glob in globs]
 numGlobs = len(globs)
 #------------------------------------ 
+class InputField:
+    def __init__(self,name,title,value,parent,index,active):
+        self.name = name
+        self.title = title
+        self.value = value
+        self.index = index
+        print('making container {}-container, active = {}'.format(self.name,active))
+        self.container = DynamicElement(name = '{}-container'.format(self.name),parent=self,active=active)
+        print('made container {}-container, active = {}'.format(self.name,active))
+        self.parent = parent
+        self.make_div()
+    def make_div(self):
+        children = [
+            html.Label(self.title,className='field-label'),
+            dcc.Input(
+                id = self.name,
+                n_submit = 0,
+                value = self.value,
+                type = 'text'
+            )
+        ]
+        self.container.make_div(children)
+    def activate(self):
+        self.container.set_visibility(active=True)
+    def deactivate(self):
+        self.container.set_visibility(active=False)
 
 
 class InputBox:
-    def __init__(self,parent,index,active=False):
+    def __init__(self,parent,index,active,mortgage,fields=[]):
         #super().__init__(name=name,kinds=['Input'])
         self.name = 'div-{}'.format(index)
         self.displayName = 'Mortage {}'.format(index)
@@ -108,23 +135,49 @@ class InputBox:
                 parent=self,
                 operation=closeContainerOperation,
                 organizer=interactiveDivsOrganizer)
-        self.fields = [],
-        #self.inputs['Input'] = Input(self.closeButton,'n_clicks')
-        #self.active = active
+        self.fieldInputs = []
+        for i,field in enumerate(fields):
+            self.add_field(field,index,active=True)
+        self.mortgage=mortgage
         self.make_div()
         self.parent = parent
     def add_mortgage(self,mortgage):
         self.mortgage = mortgage
+    def add_field(self,field,index,active):
+        print('making field {}-{}, active = {}'.format(self.name,field,active))
+        self.fieldInputs.append(InputField(
+            name = '{}-{}'.format(self.name,field),
+            title = field,
+            value = '0',
+            parent = self,
+            index = index,
+            active = active
+        ))
     def make_div(self):
         children = [
-            html.Div(self.displayName),
             # Button to close the div
-            html.Button(
-                'x',
-                id = self.closeButton.name,
-            )
+            html.Div(
+                html.Button(
+                    'x',
+                    id = self.closeButton.name,
+                    className = 'closeButton',
+                ),
+                # align the close button to the right https://stackoverflow.com/a/45901157
+                style={"display": "flex", "justify-content": "flex-end"}
+                #style={'align':'right'}
+            ),
+            html.H5(
+                dcc.Input(
+                    value=self.displayName,
+                    style={'color':rgb2hex(self.mortgage.color)}, 
+                    className='mortgage-name',
+                    ),
+                ),
         ]
-        self.container.make_div(children)
+        for fieldInput in self.fieldInputs:
+            children.append(fieldInput.container.div)
+        formattedDiv = html.Div(children, className='pinput pretty-container')
+        self.container.make_div(formattedDiv)
     def deactivate(self):
         self.container.set_visibility(active=False)
 
@@ -133,8 +186,14 @@ class InputBoxes:
         self.boxesList = boxesList
         self.lastNclicks = 0
         self.callDict = callDict
-    def add_div(self,name,index,active=False):
-        inputBox = InputBox(parent=self,index=index,active=active)
+    def add_div(self,name,index,active,mortgage):
+        inputBox = InputBox(
+                parent=self,
+                index=index,
+                active=active,
+                mortgage=mortgage,
+                fields=['mortgageRate'],
+                )
         self.boxesList.append(inputBox)
         #self.callDict[name] = calls
     def return_all_divs(self):
@@ -187,11 +246,15 @@ for i in range(max_input_boxes):
         active = True
     else:
         active = False
-    inputBoxes.add_div(name='div-{}'.format(i), index=i, active=active)
     mortgageComparison.addMortgage(
         name = 'Mortgage {}'.format(i+1)
     )
-    inputBoxes.boxesList[-1].add_mortgage(mortgage=mortgageComparison.mortgages[-1])
+    #inputBoxes.boxesList[-1].add_mortgage(mortgage=mortgageComparison.mortgages[-1])
+    inputBoxes.add_div(
+            name='div-{}'.format(i), 
+            index=i, 
+            active=active,
+            mortgage=mortgageComparison.mortgages[-1])
 
 mortgageComparison.simulateMortgages()    
 
@@ -201,6 +264,7 @@ addNewMortgageButton = InteractiveElement(
         parent=None,
         operation=addNewMortgageOperation,
         organizer=interactiveDivsOrganizer)
+
 
 dashApp.layout = html.Div(
     [
@@ -247,7 +311,14 @@ def update_div(*inputs):
     print('ctx.triggered = {}'.format(ctx.triggered))
     print('TRIG - {}: {}'.format(triggerObj,triggerVal))
     interactiveDivsOrganizer.get(triggerObj).operation(triggerVal)
-    return inputBoxes.return_all_divs()
+    outputDiv = html.Div(
+            html.Div(
+                inputBoxes.return_all_divs(),
+                className='panel',id='left-panel'),
+            className='left',
+            )
+    
+    return outputDiv
 
 @server.errorhandler(500)
 def server_error(e):
