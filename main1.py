@@ -112,7 +112,7 @@ topNav = html.Div(
     [
         calculateButton,
         html.H1(
-            "Drew & Dasha's Mortgage Analyzer",
+            "TVM Mortgage Analyzer",
             className='title',
             ),
     ],
@@ -140,13 +140,13 @@ for i in range(num_mortgages):
 
 mortgageComparison.simulateMortgages()    
 
-dashApp = dash.Dash(
+app = dash.Dash(
     __name__,
     server=server,
     routes_pathname_prefix='/dash/',
     #suppress_callback_exceptions=True,
 )
-dashApp.scripts.config.serve_locally = True
+app.scripts.config.serve_locally = True
 
 # Create list of divs for mortgage inputs (including global inputs)
 mGroups = []
@@ -236,15 +236,16 @@ rightPanel = html.Div(
 # Not sure if we need the layout to be a function yet or not
 def serve_layout():
     return html.Div(children=[
+        html.Div(style={'width':'100%', 'height':'65px'}),
         topNav,
         leftPanel,
         rightPanel,
     ])
 
-dashApp.layout = serve_layout
+app.layout = serve_layout
 
 # The following function is unused
-@dashApp.callback(
+@app.callback(
 	Output('left-panel', 'children'),
   	#[Input('div_num_dropdown', 'value')]
 )
@@ -321,8 +322,8 @@ callBackList = [
 
 calls.update_state_indices()
 calls.callList = [Output('main-plot', 'figure')] + calls.callList
-#@dashApp.callback(*callBackList)
-@dashApp.callback(*calls.callList)
+#@app.callback(*callBackList)
+@app.callback(*calls.callList)
 #def update_figure(button, *input_values):
 def update_figure(*input_values):
     input_floats = [float(input_value) if type(input_value) == 'float' else input_value for input_value in input_values]
@@ -363,17 +364,17 @@ def update_figure(*input_values):
                 'title': 'Time (years)',
             },
             'yaxis': {
-                'title': 'Amount paid towards home',
+                'title': 'TVM home cost ($)',
                 'range': [ymin, ymax],
             },
             'margin': {'t': 30, 'b': 30},
-            'legend': {'traceorder': 'reversed'},
+            'legend': {'x': 0.05, 'y': 1, 'traceorder': 'reversed'},
         }
     }
 
 
     '''
-dashApp.layout = html.Div(
+app.layout = html.Div(
     [
         dcc.Dropdown(
             id='div_num_dropdown',
@@ -383,7 +384,7 @@ dashApp.layout = html.Div(
         html.Div(id='div_variable')
     ]
 )
-@dashApp.callback(
+@app.callback(
     Output('div_variable', 'children'),
     [Input('div_num_dropdown', 'value')]
 )
@@ -403,8 +404,8 @@ def server_error(e):
 if __name__ == '__main__':
     # This is used when running locally. Gunicorn is used to run the
     # application on Google App Engine. See entrypoint in app.yaml.
-    #dashApp.run_server(host='127.0.0.1', port=8080, debug=True)
-    dashApp.run_server(debug=True)
+    #app.run_server(host='127.0.0.1', port=8080, debug=True)
+    app.run_server(debug=True)
     #server.run(host='127.0.0.1', port=8080, debug=True)
 
 
