@@ -11,7 +11,7 @@ itsdangerous==1.1.0
 Jinja2==2.10.1
 MarkupSafe==1.1.1
 -e git+https://github.com/AndrewChap/mortgagetvm.git@9be47371983f2f883be74c02e3eddad2746b6eb9#egg=mortgagetvm
-numpy==1.17.0
+numpy==1.22.0
 pandas==0.24.2
 plotly==4.1.0
 python-dateutil==2.8.0
